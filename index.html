@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tamil Nadu Tourism Route Planner</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+        color: #333;
+      }
+
+      .container {
+        max-width: 1600px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+        backdrop-filter: blur(10px);
+      }
+
+      h1 {
+        text-align: center;
+        color: #2c3e50;
+        margin-bottom: 30px;
+        font-size: 2.5rem;
+        font-weight: 700;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-bottom: 25px;
+        padding: 20px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .algorithm-selector {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+        width: 100%;
+      }
+
+      .algorithm-btn {
+        padding: 12px 20px;
+        background: linear-gradient(135deg, #87ceeb 0%, #5dade2 100%);
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 600;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        color: #2c3e50;
+      }
+
+      .algorithm-btn.active {
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(52, 152, 219, 0.3);
+      }
+
+      .algorithm-btn:hover:not(.active) {
+        background: linear-gradient(135deg, #7cc7e8 0%, #4fa8d8 100%);
+        transform: translateY(-1px);
+      }
+
+      .control-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .control-group label {
+        font-weight: 600;
+        color: #495057;
+      }
+
+      select,
+      button {
+        padding: 10px 15px;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        background-color: white;
+        font-size: 14px;
+        transition: all 0.3s ease;
+      }
+
+      select:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+      }
+
+      button {
+        background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      button:hover {
+        background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 12px rgba(46, 204, 113, 0.3);
+      }
+
+      .graph-container {
+        position: relative;
+        height: 1000px;
+        width: 100%;
+        border: 3px solid #e0e0e0;
+        border-radius: 15px;
+        overflow: hidden;
+        background: linear-gradient(135deg, #fafafa 0%, #f1f3f4 100%);
+        margin-bottom: 25px;
+        box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .node {
+        position: absolute;
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+        transition: all 0.4s ease;
+        z-index: 10;
+        border: 3px solid white;
+        font-size: 11px;
+        text-align: center;
+        line-height: 1.2;
+      }
+
+      .node:hover {
+        transform: scale(1.1);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      .node.visited {
+        background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        animation: pulse 0.6s ease-in-out;
+      }
+
+      .node.current {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        transform: scale(1.2);
+        animation: glow 1s ease-in-out infinite alternate;
+      }
+
+      .node.path {
+        background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        animation: bounce 0.8s ease-in-out;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.1);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      @keyframes glow {
+        0% {
+          box-shadow: 0 6px 15px rgba(231, 76, 60, 0.4);
+        }
+        100% {
+          box-shadow: 0 6px 25px rgba(231, 76, 60, 0.8);
+        }
+      }
+
+      @keyframes bounce {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+      }
+
+      .edge {
+        position: absolute;
+        height: 5px;
+        background: linear-gradient(90deg, #bdc3c7 0%, #95a5a6 100%);
+        transform-origin: 0 0;
+        z-index: 1;
+        border-radius: 2px;
+        transition: all 0.3s ease;
+      }
+
+      .edge.active {
+        background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+        height: 7px;
+        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.4);
+      }
+
+      .edge.path {
+        background: linear-gradient(90deg, #f39c12 0%, #e67e22 100%);
+        height: 7px;
+        box-shadow: 0 2px 8px rgba(243, 156, 18, 0.4);
+      }
+
+      .edge-weight {
+        position: absolute;
+        background: linear-gradient(135deg, white 0%, #f8f9fa 100%);
+        padding: 6px 10px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        border: 2px solid #dee2e6;
+        z-index: 5;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+        color: #495057;
+      }
+
+      .status {
+        padding: 20px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        margin-bottom: 25px;
+        min-height: 80px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .status #algorithm-description {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 10px;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-top: 25px;
+      }
+
+      .stat-box {
+        padding: 20px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 15px;
+        text-align: center;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+      }
+
+      .stat-box:hover {
+        transform: translateY(-2px);
+      }
+
+      .stat-value {
+        font-size: 32px;
+        font-weight: 700;
+        color: #3498db;
+        margin-bottom: 5px;
+      }
+
+      .stat-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .navigation {
+        display: flex;
+        gap: 15px;
+        margin-top: 20px;
+        justify-content: center;
+      }
+
+      .navigation button {
+        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        padding: 12px 24px;
+        border-radius: 10px;
+      }
+
+      .navigation button:hover {
+        background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+      }
+
+      .step-info {
+        margin-top: 15px;
+        font-style: italic;
+        color: #6c757d;
+        font-size: 14px;
+        padding: 10px;
+        background: rgba(108, 117, 125, 0.1);
+        border-radius: 8px;
+        border-left: 4px solid #6c757d;
+      }
+
+      /* Responsive design */
+      @media (max-width: 1200px) {
+        .container {
+          padding: 20px;
+        }
+
+        .graph-container {
+          height: 800px;
+        }
+
+        .node {
+          width: 70px;
+          height: 70px;
+          font-size: 10px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .controls {
+          flex-direction: column;
+        }
+
+        .algorithm-selector {
+          justify-content: center;
+        }
+
+        .graph-container {
+          height: 600px;
+        }
+
+        .node {
+          width: 60px;
+          height: 60px;
+          font-size: 9px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Tamil Nadu Tourism Route Planner</h1>
+
+      <div class="controls">
+        <div class="algorithm-selector">
+          <button
+            class="algorithm-btn active"
+            onclick="selectAlgorithm(event, 'dfs')"
+          >
+            DFS
+          </button>
+          <button
+            class="algorithm-btn"
+            onclick="selectAlgorithm(event, 'prims')"
+          >
+            Prim's MST
+          </button>
+          <button
+            class="algorithm-btn"
+            onclick="selectAlgorithm(event, 'dijkstra')"
+          >
+            Dijkstra
+          </button>
+        </div>
+
+        <div class="control-group">
+          <label for="start-city">Start City:</label>
+          <select id="start-city"></select>
+        </div>
+
+        <div class="control-group">
+          <label for="end-city">End City:</label>
+          <select id="end-city"></select>
+        </div>
+
+        <button onclick="runAlgorithm()">🚀 Run Algorithm</button>
+        <button onclick="resetVisualization()">🔄 Reset</button>
+      </div>
+
+      <div class="status" id="status">
+        <div id="algorithm-description">
+          DFS explores all connected nodes from a starting point using a
+          stack-based approach. Time Complexity: O(V + E)
+        </div>
+        <div class="step-info" id="step-info">
+          Click "Run Algorithm" to start the visualization
+        </div>
+      </div>
+
+      <div class="graph-container" id="graph-container"></div>
+
+      <div class="navigation">
+        <button onclick="stepBack()">⬅️ Previous Step</button>
+        <button onclick="stepAlgorithm()">➡️ Next Step</button>
+      </div>
+
+      <div class="stats">
+        <div class="stat-box">
+          <div class="stat-value" id="nodes-count">0</div>
+          <div class="stat-label">Total Nodes</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="edges-count">0</div>
+          <div class="stat-label">Total Edges</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="visited-count">0</div>
+          <div class="stat-label">Nodes Visited</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="current-step">0</div>
+          <div class="stat-label">Current Step</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Expanded graph with much better spacing and positioning
+      const cities = {
+        Chennai: { x: 350, y: 100 },
+        Mahabalipuram: { x: 500, y: 50 },
+        Kanchipuram: { x: 250, y: 200 },
+        Vellore: { x: 150, y: 300 },
+        Yelagiri: { x: 80, y: 420 },
+        Salem: { x: 200, y: 500 },
+        Erode: { x: 300, y: 600 },
+        Coimbatore: { x: 150, y: 750 },
+        Ooty: { x: 50, y: 850 },
+        Madurai: { x: 500, y: 750 },
+        Rameswaram: { x: 650, y: 800 },
+        Kanyakumari: { x: 400, y: 900 },
+        Thanjavur: { x: 450, y: 550 },
+        Trichy: { x: 350, y: 450 },
+        Pondicherry: { x: 550, y: 150 },
+      };
+
+      const edges = [
+        { from: "Chennai", to: "Mahabalipuram", weight: 55 },
+        { from: "Mahabalipuram", to: "Kanchipuram", weight: 65 },
+        { from: "Kanchipuram", to: "Vellore", weight: 80 },
+        { from: "Vellore", to: "Yelagiri", weight: 45 },
+        { from: "Yelagiri", to: "Salem", weight: 110 },
+        { from: "Salem", to: "Erode", weight: 70 },
+        { from: "Erode", to: "Coimbatore", weight: 100 },
+        { from: "Coimbatore", to: "Ooty", weight: 85 },
+        { from: "Salem", to: "Trichy", weight: 160 },
+        { from: "Trichy", to: "Thanjavur", weight: 55 },
+        { from: "Thanjavur", to: "Madurai", weight: 190 },
+        { from: "Madurai", to: "Rameswaram", weight: 170 },
+        { from: "Rameswaram", to: "Kanyakumari", weight: 310 },
+        { from: "Pondicherry", to: "Mahabalipuram", weight: 95 },
+        { from: "Pondicherry", to: "Chennai", weight: 160 },
+        { from: "Chennai", to: "Kanchipuram", weight: 75 },
+        { from: "Trichy", to: "Madurai", weight: 140 },
+        { from: "Erode", to: "Trichy", weight: 120 },
+      ];
+
+      let currentAlgorithm = "dfs";
+      let animationSteps = [];
+      let currentStep = 0;
+      let isAnimating = false;
+
+      // Initialize graph
+      function initializeGraph() {
+        const container = document.getElementById("graph-container");
+        container.innerHTML = "";
+
+        // Draw edges first (so they appear behind nodes)
+        edges.forEach((edge) => {
+          drawEdge(edge.from, edge.to, edge.weight);
+        });
+
+        // Draw nodes
+        Object.keys(cities).forEach((city) => {
+          drawNode(city, cities[city].x, cities[city].y);
+        });
+
+        // Populate city dropdowns
+        populateDropdowns();
+
+        // Update stats
+        updateStats();
+      }
+
+      function drawNode(city, x, y) {
+        const container = document.getElementById("graph-container");
+        const node = document.createElement("div");
+        node.className = "node";
+        node.id = `node-${city}`;
+        node.style.left = `${x}px`;
+        node.style.top = `${y}px`;
+
+        // Show abbreviated city name
+        const abbrev = city.length > 8 ? city.substring(0, 6) + "..." : city;
+        node.innerHTML = `<div style="font-size: ${
+          city.length > 8 ? "10px" : "11px"
+        };">${abbrev}</div>`;
+        node.title = city;
+
+        container.appendChild(node);
+      }
+
+      function drawEdge(from, to, weight) {
+        const container = document.getElementById("graph-container");
+        const fromNode = cities[from];
+        const toNode = cities[to];
+
+        const dx = toNode.x - fromNode.x;
+        const dy = toNode.y - fromNode.y;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+
+        const edge = document.createElement("div");
+        edge.className = "edge";
+        edge.id = `edge-${from}-${to}`;
+        edge.style.left = `${fromNode.x + 45}px`;
+        edge.style.top = `${fromNode.y + 45}px`;
+        edge.style.width = `${length}px`;
+        edge.style.transform = `rotate(${angle}deg)`;
+        container.appendChild(edge);
+
+        // Weight label - positioned at the middle of the edge
+        const label = document.createElement("div");
+        label.className = "edge-weight";
+        label.textContent = weight;
+        label.style.left = `${(fromNode.x + toNode.x) / 2 + 25}px`;
+        label.style.top = `${(fromNode.y + toNode.y) / 2 + 25}px`;
+        container.appendChild(label);
+      }
+
+      function populateDropdowns() {
+        const startSelect = document.getElementById("start-city");
+        const endSelect = document.getElementById("end-city");
+        startSelect.innerHTML = "";
+        endSelect.innerHTML = "";
+
+        Object.keys(cities).forEach((city) => {
+          const option1 = document.createElement("option");
+          option1.value = city;
+          option1.textContent = city;
+          startSelect.appendChild(option1);
+
+          const option2 = document.createElement("option");
+          option2.value = city;
+          option2.textContent = city;
+          endSelect.appendChild(option2);
+        });
+
+        // Set default values
+        startSelect.value = "Chennai";
+        endSelect.value = "Kanyakumari";
+      }
+
+      function updateStats() {
+        document.getElementById("nodes-count").textContent =
+          Object.keys(cities).length;
+        document.getElementById("edges-count").textContent = edges.length;
+        document.getElementById("visited-count").textContent = "0";
+        document.getElementById("current-step").textContent = currentStep;
+      }
+
+      function selectAlgorithm(event, algo) {
+        currentAlgorithm = algo;
+
+        document.querySelectorAll(".algorithm-btn").forEach((btn) => {
+          btn.classList.remove("active");
+        });
+        event.currentTarget.classList.add("active");
+
+        const desc = document.getElementById("algorithm-description");
+        if (algo === "dfs") {
+          desc.textContent =
+            "DFS explores all connected nodes from a starting point using a stack-based approach. Time Complexity: O(V + E)";
+        } else if (algo === "prims") {
+          desc.textContent =
+            "Prim's algorithm finds a minimum spanning tree for a weighted undirected graph. Time Complexity: O(E log V)";
+        } else {
+          desc.textContent =
+            "Dijkstra's algorithm finds the shortest path between nodes in a graph. Time Complexity: O(E + V log V)";
+        }
+
+        resetGraph();
+      }
+
+      function runAlgorithm() {
+        if (isAnimating) return;
+
+        resetGraph();
+        const startCity = document.getElementById("start-city").value;
+        const endCity = document.getElementById("end-city").value;
+
+        if (startCity === endCity && currentAlgorithm !== "prims") {
+          alert("Please select different start and end cities!");
+          return;
+        }
+
+        isAnimating = true;
+
+        if (currentAlgorithm === "dfs") {
+          runDFS(startCity, endCity);
+        } else if (currentAlgorithm === "prims") {
+          runPrims(startCity);
+        } else {
+          runDijkstra(startCity, endCity);
+        }
+
+        currentStep = 0;
+        executeStep();
+      }
+
+      // CORRECTED DFS IMPLEMENTATION
+      function runDFS(startCity, endCity) {
+        animationSteps = [];
+        const visited = new Set();
+        const stack = [[startCity, [startCity]]]; // Stack now stores [node, path]
+        let found = false;
+
+        animationSteps.push({
+          action: "start",
+          message: `🚀 Starting DFS from ${startCity} to find path to ${endCity}`,
+          visited: new Set(),
+          current: startCity,
+          path: [startCity],
+        });
+
+        while (stack.length > 0 && !found) {
+          const [current, path] = stack.pop();
+
+          if (!visited.has(current)) {
+            visited.add(current);
+
+            animationSteps.push({
+              action: "visit",
+              node: current,
+              message: `🔍 Visiting ${current} (${visited.size}/${
+                Object.keys(cities).length
+              } cities explored)`,
+              visited: new Set(visited),
+              current: current,
+              path: [...path],
+            });
+
+            if (current === endCity) {
+              found = true;
+              animationSteps.push({
+                action: "found",
+                node: current,
+                message: `🎉 Destination ${endCity} found! Path: ${path.join(
+                  " → "
+                )}`,
+                visited: new Set(visited),
+                current: current,
+                path: [...path],
+              });
+              break;
+            }
+
+            const neighbors = getNeighbors(current).filter(
+              (neighbor) => !visited.has(neighbor)
+            );
+
+            for (const neighbor of neighbors.reverse()) {
+              const newPath = [...path, neighbor];
+              animationSteps.push({
+                action: "discover",
+                from: current,
+                to: neighbor,
+                message: `🔗 Discovering ${neighbor} from ${current}`,
+                visited: new Set(visited),
+                current: current,
+                path: [...path],
+              });
+              stack.push([neighbor, newPath]);
+            }
+          }
+        }
+
+        if (!found) {
+          animationSteps.push({
+            action: "notfound",
+            message: `❌ Path from ${startCity} to ${endCity} not found! Explored ${visited.size} cities.`,
+            visited: new Set(visited),
+            path: [],
+          });
+        }
+      }
+
+      // CORRECTED PRIM'S ALGORITHM
+      function runPrims(startCity) {
+        animationSteps = [];
+        const visited = new Set([startCity]);
+        const mstEdges = [];
+
+        // Priority queue for edges (min-heap simulation)
+        const priorityQueue = [];
+
+        // Add all edges from start node to priority queue
+        getNeighbors(startCity).forEach((neighbor) => {
+          const edge = getEdge(startCity, neighbor);
+          if (edge) priorityQueue.push({ ...edge, priority: edge.weight });
+        });
+
+        // Sort by weight (simulating min-heap)
+        priorityQueue.sort((a, b) => a.weight - b.weight);
+
+        animationSteps.push({
+          action: "start",
+          message: `🌳 Starting Prim's MST algorithm from ${startCity}`,
+          visited: new Set(visited),
+          current: startCity,
+          mstEdges: [],
+        });
+
+        while (
+          visited.size < Object.keys(cities).length &&
+          priorityQueue.length > 0
+        ) {
+          // Get minimum weight edge (from priority queue)
+          const minEdge = priorityQueue.shift();
+
+          const newCity = visited.has(minEdge.from) ? minEdge.to : minEdge.from;
+
+          // Skip if both nodes are already visited
+          if (visited.has(newCity)) continue;
+
+          visited.add(newCity);
+          mstEdges.push(minEdge);
+
+          animationSteps.push({
+            action: "visit",
+            node: newCity,
+            message: `➕ Adding ${newCity} to MST via edge ${minEdge.from} ↔ ${minEdge.to} (weight: ${minEdge.weight})`,
+            visited: new Set(visited),
+            current: newCity,
+            edge: minEdge,
+            mstEdges: [...mstEdges],
+          });
+
+          // Add edges from new city to priority queue
+          getNeighbors(newCity).forEach((neighbor) => {
+            if (!visited.has(neighbor)) {
+              const edge = getEdge(newCity, neighbor);
+              if (edge) {
+                priorityQueue.push({ ...edge, priority: edge.weight });
+                // Re-sort to maintain min-heap property
+                priorityQueue.sort((a, b) => a.weight - b.weight);
+              }
+            }
+          });
+        }
+
+        const totalWeight = mstEdges.reduce(
+          (sum, edge) => sum + edge.weight,
+          0
+        );
+        animationSteps.push({
+          action: "complete",
+          message: `✅ Prim's MST completed! Total weight: ${totalWeight}, Edges: ${mstEdges.length}`,
+          visited: new Set(visited),
+          mstEdges: [...mstEdges],
+        });
+      }
+
+      // CORRECTED DIJKSTRA'S ALGORITHM
+      function runDijkstra(startCity, endCity) {
+        animationSteps = [];
+        const distances = {};
+        const previous = {};
+        const visited = new Set();
+
+        // Priority queue simulation
+        const priorityQueue = [];
+
+        // Initialize distances
+        Object.keys(cities).forEach((city) => {
+          distances[city] = city === startCity ? 0 : Infinity;
+          previous[city] = null;
+          priorityQueue.push({ city, distance: distances[city] });
+        });
+
+        // Sort by distance (simulating min-heap)
+        priorityQueue.sort((a, b) => a.distance - b.distance);
+
+        animationSteps.push({
+          action: "start",
+          message: `🎯 Starting Dijkstra's algorithm from ${startCity} to ${endCity}`,
+          visited: new Set(),
+          current: startCity,
+          distances: { ...distances },
+        });
+
+        while (priorityQueue.length > 0) {
+          // Get node with smallest distance (from priority queue)
+          const { city: current } = priorityQueue.shift();
+
+          if (visited.has(current)) continue;
+          if (distances[current] === Infinity) break;
+
+          visited.add(current);
+
+          animationSteps.push({
+            action: "visit",
+            node: current,
+            message: `📍 Processing ${current} with distance ${distances[current]}`,
+            visited: new Set(visited),
+            current: current,
+            distances: { ...distances },
+          });
+
+          if (current === endCity) {
+            // Reconstruct path
+            const path = [];
+            let pathNode = endCity;
+            while (pathNode !== null) {
+              path.unshift(pathNode);
+              pathNode = previous[pathNode];
+            }
+
+            animationSteps.push({
+              action: "found",
+              node: current,
+              message: `🎉 Shortest path found! Distance: ${
+                distances[current]
+              }, Path: ${path.join(" → ")}`,
+              visited: new Set(visited),
+              current: current,
+              distances: { ...distances },
+              path: path,
+            });
+            break;
+          }
+
+          // Relax neighbors
+          const neighbors = getNeighbors(current);
+          for (const neighbor of neighbors) {
+            if (!visited.has(neighbor)) {
+              const edge = getEdge(current, neighbor);
+              if (edge) {
+                const alt = distances[current] + edge.weight;
+                if (alt < distances[neighbor]) {
+                  distances[neighbor] = alt;
+                  previous[neighbor] = current;
+
+                  // Update priority queue
+                  const index = priorityQueue.findIndex(
+                    (item) => item.city === neighbor
+                  );
+                  if (index !== -1) {
+                    priorityQueue[index].distance = alt;
+                    priorityQueue.sort((a, b) => a.distance - b.distance);
+                  }
+
+                  animationSteps.push({
+                    action: "discover",
+                    from: current,
+                    to: neighbor,
+                    message: `🔄 Updated distance to ${neighbor}: ${alt} (via ${current})`,
+                    visited: new Set(visited),
+                    current: current,
+                    distances: { ...distances },
+                  });
+                }
+              }
+            }
+          }
+        }
+
+        if (distances[endCity] === Infinity) {
+          animationSteps.push({
+            action: "notfound",
+            message: `❌ No path found from ${startCity} to ${endCity}`,
+            visited: new Set(visited),
+            distances: { ...distances },
+          });
+        }
+      }
+
+      function getNeighbors(city) {
+        return edges
+          .filter((edge) => edge.from === city || edge.to === city)
+          .map((edge) => (edge.from === city ? edge.to : edge.from));
+      }
+
+      // HELPER FUNCTION TO GET EDGE BETWEEN TWO CITIES
+      function getEdge(city1, city2) {
+        return edges.find(
+          (edge) =>
+            (edge.from === city1 && edge.to === city2) ||
+            (edge.to === city1 && edge.from === city2)
+        );
+      }
+
+      function executeStep() {
+        if (currentStep >= animationSteps.length) {
+          document.getElementById("step-info").textContent =
+            "🏁 Algorithm completed!";
+          isAnimating = false;
+          return;
+        }
+
+        const step = animationSteps[currentStep];
+        document.getElementById("step-info").textContent = step.message;
+
+        // Reset all visual states
+        resetGraphVisuals();
+
+        // Apply step changes
+        if (step.visited) {
+          document.getElementById("visited-count").textContent =
+            step.visited.size;
+
+          // Mark visited nodes
+          step.visited.forEach((city) => {
+            const node = document.getElementById(`node-${city}`);
+            if (node) node.classList.add("visited");
+          });
+        }
+
+        // Highlight current node
+        if (step.current) {
+          const currentNode = document.getElementById(`node-${step.current}`);
+          if (currentNode) currentNode.classList.add("current");
+        }
+
+        // Handle specific actions
+        if (step.action === "discover") {
+          const edgeEl =
+            document.getElementById(`edge-${step.from}-${step.to}`) ||
+            document.getElementById(`edge-${step.to}-${step.from}`);
+          if (edgeEl) edgeEl.classList.add("active");
+        }
+
+        if (step.action === "complete" && step.path) {
+          // Highlight the final path
+          highlightPath(step.path);
+        }
+
+        if (step.mstEdges) {
+          // Highlight MST edges
+          step.mstEdges.forEach((edge) => {
+            const edgeEl =
+              document.getElementById(`edge-${edge.from}-${edge.to}`) ||
+              document.getElementById(`edge-${edge.to}-${edge.from}`);
+            if (edgeEl) edgeEl.classList.add("path");
+          });
+        }
+
+        // Update current step counter
+        document.getElementById("current-step").textContent = currentStep + 1;
+
+        currentStep++;
+      }
+
+      function highlightPath(path) {
+        if (!path || path.length < 2) return;
+
+        for (let i = 0; i < path.length - 1; i++) {
+          const from = path[i];
+          const to = path[i + 1];
+          const edgeEl =
+            document.getElementById(`edge-${from}-${to}`) ||
+            document.getElementById(`edge-${to}-${from}`);
+          if (edgeEl) edgeEl.classList.add("path");
+        }
+
+        // Highlight path nodes
+        path.forEach((city) => {
+          const node = document.getElementById(`node-${city}`);
+          if (node) node.classList.add("path");
+        });
+      }
+
+      function stepAlgorithm() {
+        if (!isAnimating && animationSteps.length === 0) {
+          alert("Please run an algorithm first!");
+          return;
+        }
+        executeStep();
+      }
+
+      function stepBack() {
+        if (currentStep <= 1) return;
+
+        currentStep -= 2;
+        executeStep();
+      }
+
+      function resetGraph() {
+        resetGraphVisuals();
+        animationSteps = [];
+        currentStep = 0;
+        isAnimating = false;
+        document.getElementById("visited-count").textContent = "0";
+        document.getElementById("current-step").textContent = "0";
+        document.getElementById("step-info").textContent =
+          "Click 'Run Algorithm' to start the visualization";
+      }
+
+      function resetGraphVisuals() {
+        // Reset all nodes
+        document.querySelectorAll(".node").forEach((node) => {
+          node.classList.remove("visited", "current", "path");
+        });
+
+        // Reset all edges
+        document.querySelectorAll(".edge").forEach((edge) => {
+          edge.classList.remove("active", "path");
+        });
+      }
+
+      function resetVisualization() {
+        resetGraph();
+
+        // Reset algorithm description
+        const desc = document.getElementById("algorithm-description");
+        if (currentAlgorithm === "dfs") {
+          desc.textContent =
+            "DFS explores all connected nodes from a starting point using a stack-based approach. Time Complexity: O(V + E)";
+        } else if (currentAlgorithm === "prims") {
+          desc.textContent =
+            "Prim's algorithm finds a minimum spanning tree for a weighted undirected graph. Time Complexity: O(E log V)";
+        } else {
+          desc.textContent =
+            "Dijkstra's algorithm finds the shortest path between nodes in a graph. Time Complexity: O(E + V log V)";
+        }
+      }
+
+      // Initialize on load
+      window.addEventListener("load", function () {
+        initializeGraph();
+      });
+
+      // Add keyboard shortcuts
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "ArrowRight" || event.key === " ") {
+          event.preventDefault();
+          stepAlgorithm();
+        } else if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          stepBack();
+        } else if (event.key === "Enter") {
+          event.preventDefault();
+          runAlgorithm();
+        } else if (event.key === "Escape") {
+          event.preventDefault();
+          resetVisualization();
+        }
+      });
+    </script>
+  </body>
+</html>
